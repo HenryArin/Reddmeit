@@ -1,41 +1,56 @@
-🧠 ReddmeitAlpha – Personalized Subreddit Recommender
-ReddmeitAlpha is a Go-based tool that securely connects to the Reddit API using OAuth2 to fetch a user's:
+# 🧠 ReddmeitAlpha
 
-Subscribed subreddits
+**ReddmeitAlpha** is a Go application that securely connects to the Reddit API to fetch and analyze your subreddit activity. It combines your **subscriptions**, **upvoted posts**, and **comments** into a unified profile that can later be used for **smart subreddit recommendations** powered by AI.
 
-Upvoted posts
+---
 
-Commented posts
+## 📦 Features
 
-It then analyzes interaction patterns to build a behavioral profile across subreddits. This data can be used to:
+- ✅ Fetches all subscribed subreddits  
+- ✅ Retrieves subreddits from upvoted posts  
+- ✅ Retrieves subreddits from user comments  
+- ✅ Combines data into a structured view  
+- 🔐 Uses `.env` to store sensitive credentials  
+- 🧠 Prepares data for future AI-based subreddit suggestions
 
-Visualize your Reddit activity
+---
 
-Generate smart subreddit recommendations using AI (coming soon)
+## 🔧 Setup
 
-Understand where you're most active—even outside your subscriptions
+### 1. Clone the Repository
 
-✨ Features
-OAuth2 authentication with Reddit (token stored in .env)
+```bash
+git clone https://github.com/your-username/ReddmeitAlpha.git
+cd ReddmeitAlpha
 
-Secure .gitignore setup to protect sensitive info
+2. Create .env File
+Make a .env file with your Reddit API credentials:
+REDDIT_ACCESS_TOKEN=your_access_token_here
+REDDIT_USERNAME=your_reddit_username_here
+⚠️ Never share your access token publicly.
 
-Handles Reddit API pagination to fetch all relevant data
-
-Combines subscriptions, upvotes, and comments into unified stats
-
-Designed for AI integration (e.g., GPT-based recommendation engine)
+3. Install Dependencies
+go mod tidy
+🚀 Run the App
+go run get_subs.go
 
 🛠 Built With
-Go (Golang) — fast, clean standard-library HTTP and JSON
+Go
 
-Reddit API — authenticated access to user data
+Reddit API
 
-godotenv — for secure .env file loading
+godotenv
 
-🚀 Upcoming (Next Steps)
-Integrate with OpenAI to recommend new subreddits based on your activity
+📌 TODO / Coming Soon
+ Generate subreddit recommendations using AI
 
-Save and visualize trends in user behavior
+ Save interaction data to JSON or DB
 
-Export interaction data for analysis
+ Web dashboard or CLI report
+
+ Token auto-refresh
+
+📄 License
+MIT – feel free to use and modify.
+
+```
