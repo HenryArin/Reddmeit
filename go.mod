@@ -1,8 +1,8 @@
-module reddmeitalpha
+module github.com/HenryArin/ReddmeitAlpha
 
 go 1.24.4
 
 require (
-	github.com/joho/godotenv v1.5.1 // indirect
-	github.com/sashabaranov/go-openai v1.40.2 // indirect
+	github.com/joho/godotenv v1.5.1
+	github.com/sashabaranov/go-openai v1.40.2
 )
