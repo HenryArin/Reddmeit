@@ -5,19 +5,21 @@ import (
 	"strings"
 )
 
+// Plan holds lists of subreddit actions
 type Plan struct {
 	ToAdd    []string
 	ToRemove []string
 	ToKeep   []string
 }
 
+// ParseSubredditPlan parses GPT response into a Plan
 func ParseSubredditPlan(response string) Plan {
 	lines := strings.Split(response, "\n")
 	var plan Plan
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if line == "" || len(line) < 3 {
+		if len(line) < 2 {
 			continue
 		}
 
@@ -37,6 +39,7 @@ func ParseSubredditPlan(response string) Plan {
 	return plan
 }
 
+// PrintPlan displays the actionable adds and removes
 func PrintPlan(plan Plan) {
 	if len(plan.ToAdd) > 0 {
 		fmt.Println("To Add:")
@@ -48,12 +51,6 @@ func PrintPlan(plan Plan) {
 		fmt.Println("To Remove:")
 		for _, sub := range plan.ToRemove {
 			fmt.Printf(" - %s\n", sub)
-		}
-	}
-	if len(plan.ToKeep) > 0 {
-		fmt.Println("Kept:")
-		for _, sub := range plan.ToKeep {
-			fmt.Printf(" = %s\n", sub)
 		}
 	}
 }
