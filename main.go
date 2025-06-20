@@ -14,28 +14,31 @@ import (
 )
 
 func main() {
+	// Load environment variables
 	utils.LoadEnv()
 
+	// Get credentials
 	accessToken := os.Getenv("REDDIT_ACCESS_TOKEN")
 	username := os.Getenv("REDDIT_USERNAME")
-
 	if accessToken == "" || username == "" {
 		fmt.Println("❌ Missing environment variables.")
 		return
 	}
 
-	// Step 1: Ask user for interests
-	fmt.Print("🧠 What are you into lately? (describe your Reddit interests)\n> ")
+	// Prompt user for interests
 	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("🧠 What are you into lately? (describe your Reddit interests)")
+	fmt.Print("> ")
 	userPrompt, _ := reader.ReadString('\n')
 	userPrompt = strings.TrimSpace(userPrompt)
 
-	// Step 2: Fetch subreddit activity
+	// Fetch subreddit activity
 	fmt.Println("📥 Fetching your subreddit activity...")
 	subscribed := services.FetchSubscribedSubreddits(accessToken)
 	upvoted := services.FetchUserActivity(username, accessToken, "upvoted")
 	commented := services.FetchUserActivity(username, accessToken, "comments")
 
+	// Combine into active list
 	combined := controllers.CombineSubredditStats(subscribed, upvoted, commented)
 	activeList := controllers.FilterActiveSubreddits(combined, 2)
 
@@ -44,91 +47,98 @@ func main() {
 		activeNames = append(activeNames, strings.TrimPrefix(sub, "r/"))
 	}
 
-	// Step 3: Build GPT prompt and message history
+	// Build initial GPT-based prompt and memory
 	var messages []openai.ChatCompletionMessage
-	initialPrompt := services.BuildPrompt(userPrompt, activeNames)
-
-	messages = append(messages, openai.ChatCompletionMessage{
+	systemMsg := openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleSystem,
+		Content: "You help users manage Reddit subscriptions. Format only as + r/Name, - r/Name, and = r/Name. Don't remove previously suggested items unless asked. No extra commentary.",
+	}
+	userMsg := openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,
-		Content: initialPrompt,
-	})
+		Content: services.BuildPrompt(userPrompt, activeNames),
+	}
+	messages = []openai.ChatCompletionMessage{systemMsg, userMsg}
 
-	// Step 4: Initial GPT response
+	// Initial GPT suggestion
+	fmt.Println("\n🤖 AI is generating recommendations...")
 	reply, messages := services.RefineRecommendationsWithMemory(messages)
-	fmt.Println("\n📝 Suggested Changes:")
-	fmt.Println(reply)
-	parsed := controllers.ParseRecommendationOutput(reply)
+	plan := utils.ParseSubredditPlan(reply)
+	utils.PrintPlan(plan)
 
-	// Step 5: Feedback loop
-	feedbackReader := bufio.NewReader(os.Stdin)
-
+	// Feedback loop
 	for {
-		fmt.Println("\n🧾 Current Plan:")
-
-		if len(parsed.Add) > 0 {
-			fmt.Println("To Add:")
-			for _, sub := range parsed.Add {
-				fmt.Println(" +", sub)
-			}
-		}
-		if len(parsed.Remove) > 0 {
-			fmt.Println("To Remove:")
-			for _, sub := range parsed.Remove {
-				fmt.Println(" -", sub)
-			}
-		}
-		if len(parsed.Keep) > 0 {
-			fmt.Println("Kept:")
-			for _, sub := range parsed.Keep {
-				fmt.Println(" =", sub)
-			}
-		}
-
 		fmt.Print("\n💬 Feedback? (say anything — GPT will revise), or press [enter] to confirm:\n> ")
-		feedback, _ := feedbackReader.ReadString('\n')
+		feedback, _ := reader.ReadString('\n')
 		feedback = strings.TrimSpace(feedback)
-
 		if feedback == "" {
-			// Final summary before confirmation
-			fmt.Println("\n📦 Final Summary:")
-			if len(parsed.Add) > 0 {
-				fmt.Println("✅ Add:")
-				for _, sub := range parsed.Add {
-					fmt.Println(" +", sub)
-				}
-			}
-			if len(parsed.Remove) > 0 {
-				fmt.Println("❌ Remove:")
-				for _, sub := range parsed.Remove {
-					fmt.Println(" -", sub)
-				}
-			}
-			if len(parsed.Keep) > 0 {
-				fmt.Println("✔ Keep:")
-				for _, sub := range parsed.Keep {
-					fmt.Println(" =", sub)
-				}
-			}
-
-			fmt.Println("\n✅ Finalized plan confirmed.")
 			break
 		}
 
-		// Add feedback to message history
-		messages = append(messages, openai.ChatCompletionMessage{
-			Role:    openai.ChatMessageRoleUser,
-			Content: feedback,
-		})
-
-		fmt.Println("🤖 Asking GPT to revise based on your feedback...")
-
+		// Append user feedback and get revised plan
+		messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleUser, Content: feedback})
 		reply, messages = services.RefineRecommendationsWithMemory(messages)
-		fmt.Println("\n📝 Updated Plan from AI:")
-		fmt.Println(reply)
+		newPlan := utils.ParseSubredditPlan(reply)
 
-		parsed = controllers.ParseRecommendationOutput(reply)
+		// Merge new suggestions with existing plan
+		plan = mergePlans(plan, newPlan)
+		utils.PrintPlan(plan)
 	}
 
-	// Placeholder for Phase 3
+	// Final summary
+	fmt.Println("\n📦 Final Summary:")
+	utils.PrintPlan(plan)
+	fmt.Println("\n✅ Finalized plan confirmed.")
 	fmt.Println("\n🚀 You're ready to apply these changes via Reddit API!")
+}
+
+// mergePlans combines two plans, preserving all adds/removes/keeps, with keep overriding remove
+func mergePlans(old, new utils.Plan) utils.Plan {
+	// Combine lists
+	adds := union(old.ToAdd, new.ToAdd)
+	removes := union(old.ToRemove, new.ToRemove)
+	keeps := union(old.ToKeep, new.ToKeep)
+
+	// If a subreddit is kept, it should not be in removes or adds
+	removes = subtract(removes, keeps)
+	adds = subtract(adds, keeps)
+
+	// If a subreddit is removed, it should not be in adds
+	adds = subtract(adds, removes)
+
+	return utils.Plan{
+		ToAdd:    adds,
+		ToRemove: removes,
+		ToKeep:   keeps,
+	}
+}
+
+// union returns the deduplicated union of two string slices
+func union(a, b []string) []string {
+	set := make(map[string]bool)
+	for _, x := range a {
+		set[x] = true
+	}
+	for _, x := range b {
+		set[x] = true
+	}
+	result := make([]string, 0, len(set))
+	for x := range set {
+		result = append(result, x)
+	}
+	return result
+}
+
+// subtract removes any elements in b from a
+func subtract(a, b []string) []string {
+	setB := make(map[string]bool)
+	for _, x := range b {
+		setB[x] = true
+	}
+	result := make([]string, 0)
+	for _, x := range a {
+		if !setB[x] {
+			result = append(result, x)
+		}
+	}
+	return result
 }
