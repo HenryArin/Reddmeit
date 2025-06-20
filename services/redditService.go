@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
 )
 
 func FetchSubscribedSubreddits(accessToken string) map[string]bool {
@@ -101,4 +100,13 @@ func FetchUserActivity(username, accessToken, activityType string) map[string]bo
 	}
 
 	return subreddits
+}
+
+// Wrapper functions for main.go
+func FetchUpvotedSubreddits(username, accessToken string) map[string]bool {
+	return FetchUserActivity(username, accessToken, "upvoted")
+}
+
+func FetchCommentedSubreddits(username, accessToken string) map[string]bool {
+	return FetchUserActivity(username, accessToken, "comments")
 }
