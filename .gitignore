@@ -1,0 +1,17 @@
+# Ignore sensitive files
+.env
+
+# Ignore build/cache files
+*.exe
+*.out
+*.o
+*.log
+
+# Go-specific files
+bin/
+vendor/
+*.test
+
+# OS-specific
+.DS_Store
+Thumbs.db
