@@ -24,11 +24,12 @@ git clone https://github.com/your-username/ReddmeitAlpha.git
 cd ReddmeitAlpha
 ```
 
-2. **Create a `.env` file** with your Reddit credentials:
+2. **Create a `.env` file** with your Reddit/OpenAI credentials:
 
 ```bash
 REDDIT_ACCESS_TOKEN=your_access_token_here
 REDDIT_USERNAME=your_reddit_username_here
+OPENAI_API_KEY=your_OPENAI_key_here
 ```
 
 3. **Install dependencies**
