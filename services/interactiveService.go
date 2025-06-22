@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/HenryArin/ReddmeitAlpha/controllers"
 	"github.com/HenryArin/ReddmeitAlpha/models"
 	"github.com/HenryArin/ReddmeitAlpha/utils"
 )
@@ -46,13 +47,16 @@ func RunInteractiveSession() error {
 			continue
 		}
 
+		// Parse intent
+		intent := controllers.ParseConversationIntent(prompt)
+
 		// Fetch current user activity
 		subscribed := FetchSubscribedSubreddits(token)
 		upvoted := FetchUserActivity(user, token, "upvoted")
 		commented := FetchUserActivity(user, token, "comments")
 
-		// Get AI recommendation
-		result, err := HandleRequest(prompt, subscribed, upvoted, commented)
+		// Get AI recommendation with intent
+		result, err := HandleRequest(prompt, intent, subscribed, upvoted, commented)
 		if err != nil {
 			return fmt.Errorf("assistant error: %w", err)
 		}

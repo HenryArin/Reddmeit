@@ -5,13 +5,14 @@ import (
 )
 
 type Intent struct {
-	RegenerateAdds     bool
-	RegenerateRemoves  bool
-	ClearRemoves       bool
-	NewTopicPrompt     string
-	ShowSubList        bool
-	RemoveMode         bool
-	RawFeedback        string
+	RegenerateAdds    bool
+	RegenerateRemoves bool
+	ClearRemoves      bool
+	NewTopicPrompt    string
+	ShowSubList       bool
+	RemoveMode        bool
+	FollowUpMore      bool // NEW
+	RawFeedback       string
 }
 
 // ParseConversationIntent examines the user input to determine their intent.
@@ -19,8 +20,12 @@ func ParseConversationIntent(input string) Intent {
 	lc := strings.ToLower(input)
 	intent := Intent{RawFeedback: input}
 
-	// Regenerate additions
-	if strings.Contains(lc, "give me") && strings.Contains(lc, "more") && strings.Contains(lc, "subs") {
+	// Match vague follow-up prompts like "give me more", "another one", "recommend more"
+	if containsAny(lc, []string{
+		"give me more", "more subs", "recommend more", "another one",
+		"more suggestions", "another suggestion", "more please",
+	}) {
+		intent.FollowUpMore = true
 		intent.RegenerateAdds = true
 	}
 
@@ -45,6 +50,7 @@ func ParseConversationIntent(input string) Intent {
 		"show my subreddits", "show me my subreddits", "list my subs",
 		"list my subreddits", "what am i subscribed to", "what communities",
 		"what subreddits", "which ones do i follow", "subs i use",
+		"review", "summary",
 	}) {
 		intent.ShowSubList = true
 	}
