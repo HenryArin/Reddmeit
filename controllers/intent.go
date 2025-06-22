@@ -10,6 +10,7 @@ type Intent struct {
 	ClearRemoves       bool
 	NewTopicPrompt     string
 	ShowSubList        bool
+	RemoveMode         bool
 	RawFeedback        string
 }
 
@@ -18,42 +19,53 @@ func ParseConversationIntent(input string) Intent {
 	lc := strings.ToLower(input)
 	intent := Intent{RawFeedback: input}
 
-	// Regenerate additions: e.g. "give me more subs"
+	// Regenerate additions
 	if strings.Contains(lc, "give me") && strings.Contains(lc, "more") && strings.Contains(lc, "subs") {
 		intent.RegenerateAdds = true
 	}
 
-	// Regenerate removals: e.g. "remove more", "prune more"
+	// Regenerate removals
 	if strings.Contains(lc, "remove more") || strings.Contains(lc, "prune more") {
 		intent.RegenerateRemoves = true
 	}
 
-	// Clear all removal suggestions: "keep all", "clear removes"
+	// Clear removal suggestions
 	if strings.Contains(lc, "keep all") || strings.Contains(lc, "clear removes") {
 		intent.ClearRemoves = true
 	}
 
-	// New topic prompt: "suggest more subs"
+	// New topic prompt
 	if strings.Contains(lc, "suggest more") && strings.Contains(lc, "subs") {
 		intent.NewTopicPrompt = input
 	}
 
-	// Show current subscriptions: multiple phrasings
-	if strings.Contains(lc, "show subs") ||
-		strings.Contains(lc, "show my subs") ||
-		strings.Contains(lc, "show me my subs") ||
-		strings.Contains(lc, "show subreddits") ||
-		strings.Contains(lc, "show my subreddits") ||
-		strings.Contains(lc, "show me my subreddits") ||
-		strings.Contains(lc, "list my subs") ||
-		strings.Contains(lc, "list my subreddits") ||
-		strings.Contains(lc, "what am i subscribed to") ||
-		strings.Contains(lc, "what communities") ||
-		strings.Contains(lc, "what subreddits") ||
-		strings.Contains(lc, "which ones do i follow") ||
-		strings.Contains(lc, "subs i use") {
+	// Show current subscriptions
+	if containsAny(lc, []string{
+		"show subs", "show my subs", "show me my subs", "show subreddits",
+		"show my subreddits", "show me my subreddits", "list my subs",
+		"list my subreddits", "what am i subscribed to", "what communities",
+		"what subreddits", "which ones do i follow", "subs i use",
+	}) {
 		intent.ShowSubList = true
 	}
 
+	// General fuzzy removal intent (we let GPT handle the category)
+	if containsAny(lc, []string{
+		"remove", "unsubscribe", "prune", "get rid", "delete", "i don't want",
+	}) {
+		intent.RemoveMode = true
+		intent.NewTopicPrompt = input // Forward full phrase to GPT
+		intent.RegenerateRemoves = true
+	}
+
 	return intent
+}
+
+func containsAny(input string, keywords []string) bool {
+	for _, k := range keywords {
+		if strings.Contains(input, k) {
+			return true
+		}
+	}
+	return false
 }

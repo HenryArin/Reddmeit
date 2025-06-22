@@ -19,6 +19,11 @@ func RunInteractiveSession() error {
 		return fmt.Errorf("missing REDDIT_ACCESS_TOKEN or REDDIT_USERNAME")
 	}
 
+	// 🆕 Onboarding message
+	fmt.Println("💡 Type what you're into, like 'I'm into hiking and photography'.")
+	fmt.Println("   You can also say things like 'get rid of news subs' or 'show my current plan'.")
+	fmt.Println("   Type 'summary' or 'review' anytime to preview the current recommendation.\n")
+
 	reader := bufio.NewReader(os.Stdin)
 	finalPlan := models.RecommendationPlan{}
 
@@ -54,6 +59,8 @@ func RunInteractiveSession() error {
 
 		if result.ViewOnly {
 			fmt.Println(result.Reply)
+		} else if len(result.Plan.ToAdd) == 0 && len(result.Plan.ToRemove) == 0 {
+			fmt.Println("🤖 No strong subreddit matches. Try rephrasing or being more specific?")
 		} else {
 			fmt.Println("🤖 AI recommendations:")
 			utils.PrintPlan(result.Plan)

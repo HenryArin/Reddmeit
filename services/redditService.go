@@ -146,3 +146,26 @@ func FetchUpvotedSubreddits(username, accessToken string) map[string]bool {
 func FetchCommentedSubreddits(username, accessToken string) map[string]bool {
 	return FetchUserActivity(username, accessToken, "comments")
 }
+
+func FetchSubredditDescription(subreddit, accessToken string) string {
+	url := fmt.Sprintf("https://oauth.reddit.com/r/%s/about", subreddit)
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "bearer "+accessToken)
+	req.Header.Set("User-Agent", "reddmeitalpha/0.1")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil || resp.StatusCode != 200 {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	var result struct {
+		Data struct {
+			PublicDescription string `json:"public_description"`
+		} `json:"data"`
+	}
+	json.Unmarshal(body, &result)
+	return result.Data.PublicDescription
+}

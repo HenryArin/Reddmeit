@@ -88,11 +88,10 @@ func MergePlans(a, b models.RecommendationPlan) models.RecommendationPlan {
 		toRemove[sub] = true
 	}
 
-	for sub, reason := range a.Explanations {
-		explanations[sub] = reason
-	}
-	for sub, reason := range b.Explanations {
-		explanations[sub] = reason
+	for _, m := range []map[string]string{a.Explanations, b.Explanations} {
+		for sub, reason := range m {
+			explanations[sub] = reason
+		}
 	}
 
 	// Avoid conflicts: a sub can't be in both lists
