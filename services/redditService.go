@@ -79,30 +79,66 @@ func FetchUserActivity(username, accessToken, activityType string) map[string]bo
 
 		body, _ := io.ReadAll(resp.Body)
 
-		var parsed map[string]interface{}
-		json.Unmarshal(body, &parsed)
-
-		data := parsed["data"].(map[string]interface{})
-		children := data["children"].([]interface{})
-
-		for _, child := range children {
-			c := child.(map[string]interface{})["data"].(map[string]interface{})
-			subreddit := c["subreddit"].(string)
-			subreddits[subreddit] = true
-		}
-
-		afterRaw := data["after"]
-		if afterRaw == nil || afterRaw == "" {
+		if resp.StatusCode != 200 {
+			fmt.Printf("Reddit API error (%s): %d\n", activityType, resp.StatusCode)
+			fmt.Println("Response body:", string(body))
 			break
 		}
-		after = afterRaw.(string)
+
+		var parsed map[string]interface{}
+		if err := json.Unmarshal(body, &parsed); err != nil {
+			fmt.Println("Failed to parse JSON:", err)
+			fmt.Println("Raw response:", string(body))
+			break
+		}
+
+		rawData, ok := parsed["data"]
+		if !ok {
+			fmt.Println("Missing 'data' in Reddit response")
+			fmt.Println("Raw response:", string(body))
+			break
+		}
+
+		data, ok := rawData.(map[string]interface{})
+		if !ok {
+			fmt.Printf("'data' is not a map[string]interface{} (got %T)\n", rawData)
+			fmt.Println("Raw response:", string(body))
+			break
+		}
+
+		children, ok := data["children"].([]interface{})
+		if !ok {
+			fmt.Println("Missing or invalid 'children' array in data")
+			break
+		}
+
+		for _, child := range children {
+			childMap, ok := child.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			childData, ok := childMap["data"].(map[string]interface{})
+			if !ok {
+				continue
+			}
+			subreddit, ok := childData["subreddit"].(string)
+			if ok {
+				subreddits[subreddit] = true
+			}
+		}
+
+		afterRaw, ok := data["after"]
+		afterStr, isStr := afterRaw.(string)
+		if !ok || !isStr || afterStr == "" {
+			break
+		}
+		after = afterStr
 		url = fmt.Sprintf("https://oauth.reddit.com/user/%s/%s?limit=100&after=%s", username, activityType, after)
 	}
 
 	return subreddits
 }
 
-// Wrapper functions for main.go
 func FetchUpvotedSubreddits(username, accessToken string) map[string]bool {
 	return FetchUserActivity(username, accessToken, "upvoted")
 }
