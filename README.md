@@ -11,6 +11,7 @@ ReddmeitAlpha is a small Go application that connects to the Reddit API to colle
 - Retrieve subreddits from user comments
 - Combine all data into a structured plan
 - `.env` file keeps your credentials out of the source
+- - Generate subreddit recommendations using AI
 
 ---
 
@@ -54,7 +55,6 @@ go run main.go
 
 ## TODO / Coming Soon
 
-- Generate subreddit recommendations using AI
 - Save interaction data to JSON or a database
 - Web dashboard or CLI report
 - Token auto-refresh
