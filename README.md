@@ -22,6 +22,7 @@
 ```bash
 git clone https://github.com/your-username/ReddmeitAlpha.git
 cd ReddmeitAlpha
+```
 
 2. Create .env File
 Make a .env file with your Reddit API credentials:
@@ -32,7 +33,7 @@ REDDIT_USERNAME=your_reddit_username_here
 3. Install Dependencies
 go mod tidy
 🚀 Run the App
-go run get_subs.go
+go run main.go
 
 🛠 Built With
 Go
@@ -52,5 +53,3 @@ godotenv
 
 📄 License
 MIT – feel free to use and modify.
-
-```
