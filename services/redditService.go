@@ -26,9 +26,9 @@ func FetchSubscribedSubreddits(accessToken string) map[string]bool {
 		if err != nil {
 			panic(err)
 		}
-		defer resp.Body.Close()
 
 		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close() // Close immediately after reading
 
 		var parsed struct {
 			Data struct {
@@ -75,9 +75,9 @@ func FetchUserActivity(username, accessToken, activityType string) map[string]bo
 		if err != nil {
 			panic(err)
 		}
-		defer resp.Body.Close()
 
 		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close() // Close immediately after reading
 
 		if resp.StatusCode != 200 {
 			fmt.Printf("Reddit API error (%s): %d\n", activityType, resp.StatusCode)
@@ -156,11 +156,15 @@ func FetchSubredditDescription(subreddit, accessToken string) string {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil || resp.StatusCode != 200 {
+		if resp != nil {
+			resp.Body.Close() // Close even on error
+		}
 		return ""
 	}
-	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close() // Close immediately after reading
+
 	var result struct {
 		Data struct {
 			PublicDescription string `json:"public_description"`
